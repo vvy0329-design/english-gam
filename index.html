@@ -1,0 +1,330 @@
+html
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>英文單字小島 - 從0開始學英文</title>
+  <style>
+    :root {
+      --primary: #4A90E2;
+      --secondary: #50E3C2;
+      --accent: #F5A623;
+      --bg: #F0F4F8;
+      --card: #FFFFFF;
+      --text: #2C3E50;
+    }
+    * { box-sizing: border-box; font-family: 'Segoe UI', 'Microsoft JhengHei', sans-serif; }
+    body {
+      margin: 0; padding: 20px; background-color: var(--bg); color: var(--text);
+      display: flex; justify-content: center; align-items: center; min-height: 100vh;
+    }
+    .game-container {
+      background: var(--card); width: 100%; max-width: 480px; border-radius: 24px;
+      padding: 28px; box-shadow: 0 12px 30px rgba(0,0,0,0.08); text-align: center;
+    }
+    .header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
+    .badge {
+      background: #E1F0FF; color: var(--primary); padding: 6px 14px;
+      border-radius: 20px; font-weight: bold; font-size: 14px;
+    }
+    .score { font-weight: bold; color: var(--accent); font-size: 18px; }
+    h1 { font-size: 24px; margin: 10px 0; color: var(--text); }
+    p.subtitle { color: #7F8C8D; font-size: 15px; margin-bottom: 24px; }
+    
+    /* 學習卡片樣式 */
+    .word-card {
+      background: #F8FAFC; border: 2px solid #E2E8F0; border-radius: 20px;
+      padding: 24px; margin-bottom: 20px; cursor: pointer; transition: transform 0.2s;
+    }
+    .word-card:hover { transform: translateY(-3px); border-color: var(--primary); }
+    .emoji { font-size: 64px; margin-bottom: 10px; display: block; }
+    .en-word { font-size: 32px; font-weight: bold; color: var(--primary); letter-spacing: 1px; }
+    .zh-word { font-size: 20px; color: #555; margin-top: 6px; }
+    .speak-hint { font-size: 13px; color: #888; margin-top: 12px; display: inline-block; background: #EEE; padding: 4px 12px; border-radius: 12px; }
+
+    /* 按鈕樣式 */
+    .btn {
+      background: var(--primary); color: white; border: none; padding: 14px 28px;
+      font-size: 18px; font-weight: bold; border-radius: 16px; cursor: pointer;
+      width: 100%; transition: background 0.2s, transform 0.1s; margin-top: 10px;
+    }
+    .btn:hover { background: #357ABD; }
+    .btn:active { transform: scale(0.98); }
+    .btn-sound { background: var(--accent); margin-bottom: 20px; font-size: 16px; padding: 10px 20px; width: auto; }
+    .btn-sound:hover { background: #D98E16; }
+
+    /* 測驗選項 */
+    .options-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-top: 16px; }
+    .option-btn {
+      background: #F8FAFC; border: 2px solid #E2E8F0; border-radius: 16px;
+      padding: 16px; font-size: 18px; font-weight: bold; color: var(--text);
+      cursor: pointer; transition: all 0.2s;
+    }
+    .option-btn:hover { border-color: var(--primary); background: #F0F7FF; }
+    .option-btn.correct { background: #D4EDDA; border-color: #28A745; color: #155724; }
+    .option-btn.wrong { background: #F8D7DA; border-color: #DC3545; color: #721C24; }
+    
+    .feedback { height: 28px; margin-top: 16px; font-weight: bold; font-size: 16px; }
+    .hidden { display: none; }
+  </style>
+</head>
+<body>
+
+<div class="game-container">
+  <!-- 頂部狀態列 -->
+  <div class="header">
+    <span class="badge" id="level-badge">第 1 關：美味水果</span>
+    <span class="score">⭐ <span id="score">0</span></span>
+  </div>
+
+  <!-- 畫面 1：單字學習模式 -->
+  <div id="learn-screen">
+    <h1>先來認識新單字！</h1>
+    <p class="subtitle">點擊卡片可以重複聽發音喔</p>
+    
+    <div class="word-card" onclick="speakCurrentWord()">
+      <span class="emoji" id="learn-emoji">🍎</span>
+      <div class="en-word" id="learn-en">Apple</div>
+      <div class="zh-word" id="learn-zh">蘋果</div>
+      <span class="speak-hint">🔊 點擊聽發音</span>
+    </div>
+
+    <button class="btn" id="next-learn-btn" onclick="nextLearnWord()">下一個單字 ➔</button>
+  </div>
+
+  <!-- 畫面 2：聽力測驗模式 -->
+  <div id="quiz-screen" class="hidden">
+    <h1>小測驗：聽到什麼字？</h1>
+    <p class="subtitle">點擊喇叭聽聲音，選出正確的圖案與中文</p>
+    
+    <button class="btn btn-sound" onclick="speakQuizWord()">🔊 再聽一次發音</button>
+    
+    <div class="options-grid" id="options-container"></div>
+    <div class="feedback" id="feedback"></div>
+  </div>
+
+  <!-- 畫面 3：過關結算畫面 -->
+  <div id="result-screen" class="hidden">
+    <span class="emoji">🎉</span>
+    <h1 id="result-title">太棒了！完成關卡！</h1>
+    <p class="subtitle" id="result-desc">你已經學會了這關的所有單字！</p>
+    <button class="btn" id="next-level-btn" onclick="nextLevel()">挑戰下一關 🚀</button>
+  </div>
+</div>
+
+<script>
+  // 關卡資料庫（可自由擴充）
+ const levels = [
+    {
+      title: "第 1 關：美味水果",
+      words: [
+        { en: "Apple", zh: "蘋果", emoji: "🍎" },
+        { en: "Banana", zh: "香蕉", emoji: "🍌" },
+        { en: "Orange", zh: "橘子", emoji: "🍊" },
+        { en: "Grape", zh: "葡萄", emoji: "🍇" }
+      ]
+    },
+    {
+      title: "第 2 關：可愛動物",
+      words: [
+        { en: "Cat", zh: "貓咪", emoji: "🐱" },
+        { en: "Dog", zh: "狗狗", emoji: "🐶" },
+        { en: "Rabbit", zh: "兔子", emoji: "🐰" },
+        { en: "Bear", zh: "熊", emoji: "🐻" }
+      ]
+    },
+    {
+      title: "第 3 關：生活必備",
+      words: [
+        { en: "Water", zh: "水", emoji: "💧" },
+        { en: "Book", zh: "書本", emoji: "📖" },
+        { en: "Sun", zh: "太陽", emoji: "☀️" },
+        { en: "Thank you", zh: "謝謝你", emoji: "🙏" }
+      ]
+    },
+    {
+      title: "第 4 關：色彩繽紛",
+      words: [
+        { en: "Red", zh: "紅色", emoji: "🟥" },
+        { en: "Blue", zh: "藍色", emoji: "🟦" },
+        { en: "Yellow", zh: "黃色", emoji: "🟨" },
+        { en: "Green", zh: "綠色", emoji: "🟩" }
+      ]
+    },
+    {
+      title: "第 5 關：快樂數字",
+      words: [
+        { en: "One", zh: "數字 1", emoji: "1️⃣" },
+        { en: "Two", zh: "數字 2", emoji: "2️⃣" },
+        { en: "Three", zh: "數字 3", emoji: "3️⃣" },
+        { en: "Four", zh: "數字 4", emoji: "4️⃣" }
+      ]
+    },
+    {
+      title: "第 6 關：日常短句",
+      words: [
+        { en: "Good morning", zh: "早安", emoji: "🌅" },
+        { en: "How are you?", zh: "你好嗎？", emoji: "👋" },
+        { en: "I am happy", zh: "我很開心", emoji: "😄" },
+        { en: "See you", zh: "再見", emoji: "🏃" }
+      ]
+    }
+  ];
+
+  let currentLevelIdx = 0;
+  let learnIdx = 0;
+  let quizList = [];
+  let quizIdx = 0;
+  let score = 0;
+  let canAnswer = true;
+
+  // 語音合成功能
+  function speak(text) {
+    if ('speechSynthesis' in window) {
+      window.speechSynthesis.cancel();
+      const utterance = new SpeechSynthesisUtterance(text);
+      utterance.lang = 'en-US';
+      utterance.rate = 0.85; // 語速稍微放慢，適合初學者
+      window.speechSynthesis.speak(utterance);
+    }
+  }
+
+  // 初始化關卡
+  function initLevel() {
+    const level = levels[currentLevelIdx];
+    document.getElementById('level-badge').innerText = level.title;
+    learnIdx = 0;
+    showScreen('learn-screen');
+    renderLearnCard();
+  }
+
+  function showScreen(screenId) {
+    ['learn-screen', 'quiz-screen', 'result-screen'].forEach(id => {
+      document.getElementById(id).classList.add('hidden');
+    });
+    document.getElementById(screenId).classList.remove('hidden');
+  }
+
+  // 渲染學習卡片
+  function renderLearnCard() {
+    const wordObj = levels[currentLevelIdx].words[learnIdx];
+    document.getElementById('learn-emoji').innerText = wordObj.emoji;
+    document.getElementById('learn-en').innerText = wordObj.en;
+    document.getElementById('learn-zh').innerText = wordObj.zh;
+    
+    const btn = document.getElementById('next-learn-btn');
+    if (learnIdx === levels[currentLevelIdx].words.length - 1) {
+      btn.innerText = "開始小測驗！ 🎯";
+    } else {
+      btn.innerText = "下一個單字 ➔";
+    }
+    setTimeout(() => speak(wordObj.en), 300);
+  }
+
+  function speakCurrentWord() {
+    const wordObj = levels[currentLevelIdx].words[learnIdx];
+    speak(wordObj.en);
+  }
+
+  function nextLearnWord() {
+    const words = levels[currentLevelIdx].words;
+    if (learnIdx < words.length - 1) {
+      learnIdx++;
+      renderLearnCard();
+    } else {
+      startQuiz();
+    }
+  }
+
+  // 開始測驗
+  function startQuiz() {
+    quizList = [...levels[currentLevelIdx].words].sort(() => Math.random() - 0.5);
+    quizIdx = 0;
+    showScreen('quiz-screen');
+    renderQuizQuestion();
+  }
+
+  function renderQuizQuestion() {
+    canAnswer = true;
+    document.getElementById('feedback').innerText = "";
+    const targetWord = quizList[quizIdx];
+    const allWords = levels[currentLevelIdx].words;
+    
+    const container = document.getElementById('options-container');
+    container.innerHTML = '';
+
+    allWords.forEach(w => {
+      const btn = document.createElement('button');
+      btn.className = 'option-btn';
+      btn.innerHTML = `${w.emoji}<br>${w.zh}`;
+      btn.onclick = () => checkAnswer(btn, w.en === targetWord.en);
+      container.appendChild(btn);
+    });
+
+    setTimeout(() => speak(targetWord.en), 300);
+  }
+
+  function speakQuizWord() {
+    speak(quizList[quizIdx].en);
+  }
+
+  function checkAnswer(btnElement, isCorrect) {
+    if (!canAnswer) return;
+    const feedback = document.getElementById('feedback');
+
+    if (isCorrect) {
+      canAnswer = false;
+      btnElement.classList.add('correct');
+      feedback.style.color = "#28A745";
+      feedback.innerText = "⭕ 答對了！好棒！";
+      score += 10;
+      document.getElementById('score').innerText = score;
+
+      setTimeout(() => {
+        if (quizIdx < quizList.length - 1) {
+          quizIdx++;
+          renderQuizQuestion();
+        } else {
+          showLevelResult();
+        }
+      }, 1200);
+    } else {
+      btnElement.classList.add('wrong');
+      feedback.style.color = "#DC3545";
+      feedback.innerText = "❌ 再聽一次聲音試試看喔！";
+      speak(quizList[quizIdx].en);
+    }
+  }
+
+  function showLevelResult() {
+    showScreen('result-screen');
+    const nextBtn = document.getElementById('next-level-btn');
+    if (currentLevelIdx < levels.length - 1) {
+      document.getElementById('result-title').innerText = "太棒了！完成關卡！";
+      document.getElementById('result-desc').innerText = "準備好挑戰下一關的新單字了嗎？";
+      nextBtn.innerText = "挑戰下一關 🚀";
+    } else {
+      document.getElementById('result-title').innerText = "🏆 恭喜全部通關！";
+      document.getElementById('result-desc').innerText = `你的總得分是 ${score} 分！要再複習一次嗎？`;
+      nextBtn.innerText = "從第 1 關重新開始 🔄";
+    }
+  }
+
+  function nextLevel() {
+    if (currentLevelIdx < levels.length - 1) {
+      currentLevelIdx++;
+    } else {
+      currentLevelIdx = 0;
+      score = 0;
+      document.getElementById('score').innerText = score;
+    }
+    initLevel();
+  }
+
+  // 啟動遊戲
+  initLevel();
+</script>
+
+</body>
+</html>
